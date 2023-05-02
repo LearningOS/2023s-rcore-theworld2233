@@ -13,12 +13,14 @@ mod context;
 mod switch;
 #[allow(clippy::module_inception)]
 mod task;
-
+//mod syscall;
 use crate::config::MAX_APP_NUM;
 use crate::loader::{get_num_app, init_app_cx};
 use crate::sync::UPSafeCell;
+use crate::timer::{ get_time_ms};
 use lazy_static::*;
 use switch::__switch;
+use crate::syscall::process::TaskInfo;
 pub use task::{TaskControlBlock, TaskStatus};
 
 pub use context::TaskContext;
@@ -54,6 +56,8 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
+            syscall_num: [0;500],
+            time:get_time_ms(),
         }; MAX_APP_NUM];
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
@@ -103,7 +107,30 @@ impl TaskManager {
         let current = inner.current_task;
         inner.tasks[current].task_status = TaskStatus::Exited;
     }
+    fn mark_current_info(&self)->TaskInfo{
+        let  inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let time2=inner.tasks[current].time;
+        let mut time1=get_time_ms();
+         time1=time1-time2;
+        let _ti=TaskInfo {
+            /// Task status in it's life cycle
+            status: TaskStatus::Running,
+            /// The numbers of syscall called by task
+            syscall_times:  inner.tasks[current].syscall_num,
+            /// Total running time of task
+            time: time1,
+        };
+        _ti
+    }
+    fn mark_current_num(&self,num:usize){
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].syscall_num[ num]+= 1;
 
+    }    
+         
+    
     /// Find next task to run and return task id.
     ///
     /// In this case, we only return the first `Ready` task in task list.
@@ -168,4 +195,15 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next() {
     mark_current_exited();
     run_next_task();
+}
+///ss
+pub fn task_num(num:usize){
+    TASK_MANAGER.mark_current_num(num);
+
+}
+/// ss
+pub fn get_task_info()->TaskInfo 
+{
+    TASK_MANAGER.mark_current_info()
+
 }
