@@ -2,8 +2,11 @@
 use crate::{
     config::MAX_SYSCALL_NUM,
     task::{
-        change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, TaskStatus,
+        current_user_token,TASK_MANAGER,change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, TaskStatus,
     },
+    mm::{KERNEL_SPACE,translated_physical_address},
+    timer::get_time_us,
+    
 };
 
 #[repr(C)]
@@ -43,7 +46,16 @@ pub fn sys_yield() -> isize {
 /// HINT: What if [`TimeVal`] is splitted by two pages ?
 pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
     trace!("kernel: sys_get_time");
-    -1
+    let _us = get_time_us();
+    let token1=current_user_token();
+    let ts = translated_physical_address(token1,_ts as *const u8 ) as *mut TimeVal;
+    unsafe {
+         *ts = TimeVal {
+             sec: _us / 1_000_000,
+            usec: _us % 1_000_000,
+        };
+     }
+    0
 }
 
 /// YOUR JOB: Finish sys_task_info to pass testcases
@@ -51,19 +63,33 @@ pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
 /// HINT: What if [`TaskInfo`] is splitted by two pages ?
 pub fn sys_task_info(_ti: *mut TaskInfo) -> isize {
     trace!("kernel: sys_task_info NOT IMPLEMENTED YET!");
-    -1
+    let token1=current_user_token();
+    let _ti =  translated_physical_address(token1,ti as *const u8 ) as *mut TaskInfo;
+    unsafe{
+    *_ti = TaskInfo{
+        status:get_current_status(),
+        syscall_times:get_syscall_times(),
+        time : (get_time_us() - get_current_start_time())/1000
+
+    };
+}
+    0
 }
 
 // YOUR JOB: Implement mmap.
 pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     trace!("kernel: sys_mmap NOT IMPLEMENTED YET!");
-    -1
+    let mut kernel_space = KERNEL_SPACE.exclusive_access();
+    kernel_space.mmap(_start,_len,_port);
+    0
 }
 
 // YOUR JOB: Implement munmap.
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
     trace!("kernel: sys_munmap NOT IMPLEMENTED YET!");
-    -1
+    let mut kernel_space = KERNEL_SPACE.exclusive_access();
+    kernel_space.munmap(_start,_len);
+    0
 }
 /// change data segment size
 pub fn sys_sbrk(size: i32) -> isize {
