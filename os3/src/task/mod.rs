@@ -14,17 +14,15 @@ mod switch;
 #[allow(clippy::module_inception)]
 mod task;
 
-use crate::config::MAX_SYSCALL_NUM;
 use crate::loader::{get_app_data, get_num_app};
-use crate::mm::VirtPageNum;
 use crate::sync::UPSafeCell;
-// use crate::timer::get_time;
-use crate::timer::get_time_us;
 use crate::trap::TrapContext;
 use alloc::vec::Vec;
 use lazy_static::*;
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskStatus};
+use crate::timer::get_time_ms;
+use crate::syscall::process::TaskInfo;
 
 pub use context::TaskContext;
 
@@ -83,9 +81,6 @@ impl TaskManager {
         let mut inner = self.inner.exclusive_access();
         let next_task = &mut inner.tasks[0];
         next_task.task_status = TaskStatus::Running;
-        if next_task.task_start_time.is_none() {
-            next_task.task_start_time = Some(get_time_us());
-        }
         let next_task_cx_ptr = &next_task.task_cx as *const TaskContext;
         drop(inner);
         let mut _unused = TaskContext::zero_init();
@@ -147,9 +142,6 @@ impl TaskManager {
             let mut inner = self.inner.exclusive_access();
             let current = inner.current_task;
             inner.tasks[next].task_status = TaskStatus::Running;
-            if inner.tasks[next].task_start_time.is_none() {
-                inner.tasks[next].task_start_time = Some(get_time_us());
-            }
             inner.current_task = next;
             let current_task_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;
             let next_task_cx_ptr = &inner.tasks[next].task_cx as *const TaskContext;
@@ -163,49 +155,29 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
-
-    /// Get the start time of current task
-    fn get_start_time(&self) -> Option<usize> {
-        let inner = self.inner.exclusive_access();
-        let current = inner.current_task;
-        inner.tasks[current].task_start_time
-    }
-
-    /// Get the syscall times of current task
-    fn get_syscall_times(&self) -> [u32; MAX_SYSCALL_NUM] {
-        let inner = self.inner.exclusive_access();
-        let current = inner.current_task;
-        inner.tasks[current].task_syscall_times.clone()
-    }
-
-    /// Set the syscall times of current task
-    #[allow(dead_code)]
-    fn set_syscall_times(&self, syscall_id: usize, syscall_times: u32) {
+    fn mark_current_num(&self,num:usize){
         let mut inner = self.inner.exclusive_access();
         let current = inner.current_task;
-        inner.tasks[current].task_syscall_times[syscall_id] = syscall_times;
+        inner.tasks[current].syscall_num[ num]+= 1;
+
+    }
+    fn mark_current_info(&self)->TaskInfo{
+        let  inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let time2=inner.tasks[current].time;
+        let mut time1=get_time_ms();
+         time1=time1-time2;
+        let _ti=TaskInfo {
+            /// Task status in it's life cycle
+            status: TaskStatus::Running,
+            /// The numbers of syscall called by task
+            syscall_times:  inner.tasks[current].syscall_num,
+            /// Total running time of task
+            time: time1,
+        };
+        _ti
     }
 
-    /// Increment the count of syscall.
-    fn increase_syscall_times(&self, syscall_id: usize) {
-        let mut inner = self.inner.exclusive_access();
-        let current = inner.current_task;
-        inner.tasks[current].task_syscall_times[syscall_id] += 1;
-    }
-
-    /// apply for a block of memory [start, start + len) with permission port
-    fn mmap(&self, start: usize, len: usize, port: usize) -> Option<(VirtPageNum, VirtPageNum)> {
-        let mut inner = self.inner.exclusive_access();
-        let current = inner.current_task;
-        inner.tasks[current].mmap(start, len, port)
-    }
-
-    /// remove a block of memory [start, start + len)
-    fn munmap(&self, start: usize, len: usize) -> bool {
-        let mut inner = self.inner.exclusive_access();
-        let current = inner.current_task;
-        inner.tasks[current].munmap(start, len)
-    }
 }
 
 /// Run the first task in task list.
@@ -256,27 +228,16 @@ pub fn change_program_brk(size: i32) -> Option<usize> {
     TASK_MANAGER.change_current_program_brk(size)
 }
 
-/// Get the start time of current task
-pub fn get_current_start_time() -> Option<usize> {
-    TASK_MANAGER.get_start_time()
+///
+pub fn get_task_info()->TaskInfo 
+{
+    TASK_MANAGER.mark_current_info()
+
 }
 
-/// Set the syscall times of current task
-pub fn get_current_syscall_times() -> [u32; MAX_SYSCALL_NUM] {
-    TASK_MANAGER.get_syscall_times()
+///
+pub fn task_num(num:usize){
+    TASK_MANAGER.mark_current_num(num);
+
 }
 
-/// Increment the count of syscall.
-pub fn increase_syscall_times(syscall_id: usize) {
-    TASK_MANAGER.increase_syscall_times(syscall_id);
-}
-
-/// apply for a block of memory [start, start + len) with permission port
-pub fn mmap(start: usize, len: usize, port: usize) -> Option<(VirtPageNum, VirtPageNum)> {
-    TASK_MANAGER.mmap(start, len, port)
-}
-
-/// remove a block of memory [start, start + len)
-pub fn munmap(start: usize, len: usize) -> bool {
-    TASK_MANAGER.munmap(start, len)
-}
