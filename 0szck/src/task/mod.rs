@@ -19,6 +19,7 @@ use crate::sync::UPSafeCell;
 use crate::trap::TrapContext;
 use alloc::vec::Vec;
 use lazy_static::*;
+
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskStatus};
 use crate::timer::get_time_ms;
@@ -177,6 +178,20 @@ impl TaskManager {
         };
         _ti
     }
+    ///
+    fn mmap(&self, start: usize, len: usize, port: usize) -> isize {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].memory_set.mmap(start, len, port)
+        //inner.tasks[current].mmap(start, len, port)
+    }
+
+    /// remove a block of memory [start, start + len)
+    fn munmap(&self, start: usize, len: usize) -> isize {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].memory_set.munmap(start, len)
+    }
 
 }
 
@@ -240,4 +255,12 @@ pub fn task_num(num:usize){
     TASK_MANAGER.mark_current_num(num);
 
 }
+/// apply for a block of memory [start, start + len) with permission port
+pub fn mmap(start: usize, len: usize, port: usize) -> isize {
+    TASK_MANAGER.mmap(start, len, port)
+}
 
+/// remove a block of memory [start, start + len)
+pub fn munmap(start: usize, len: usize) -> isize {
+    TASK_MANAGER.munmap(start, len)
+}

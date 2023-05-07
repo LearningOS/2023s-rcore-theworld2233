@@ -4,9 +4,9 @@ use crate::{
     task::{
         get_task_info,current_user_token,change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, TaskStatus,
     },
-    mm::{KERNEL_SPACE,translated_physical_address},
+    mm::{translated_physical_address},
     timer::get_time_us,
-    
+    task::{mmap,munmap},
 };
 
 #[repr(C)]
@@ -82,6 +82,9 @@ pub fn sys_task_info(_ti: *mut TaskInfo) -> isize {
 /// YOUR JOB: Implement mmap.
 pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     trace!("kernel: sys_mmap NOT IMPLEMENTED YET!");
+
+
+
     let flag= _start%4096;
     let  mut rellen:usize=_len;
     if (_len%4096)!=0
@@ -94,8 +97,7 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     let flag2=_port& 0x7;
     if flag==0 &&flag2>0&&_port<8
     {
-        let mut kernel_space = KERNEL_SPACE.exclusive_access();
-    let a=kernel_space.mmap(_start,rellen,_port);
+       let a=mmap(_start,rellen,_port);
     println!("aaaaaaaaaaaaaaaaaaaaaaaaaaa={}",a);
     a
     
@@ -119,9 +121,8 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
     //let flag2=_port& 0x7;
     if flag==0 
     {
-        let mut kernel_space = KERNEL_SPACE.exclusive_access();
-        kernel_space.munmap(_start,rellen);
-    0
+        munmap(_start,rellen)
+    
     }
     else {
         -1
