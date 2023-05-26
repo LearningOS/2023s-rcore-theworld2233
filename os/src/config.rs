@@ -23,5 +23,11 @@ pub const TRAP_CONTEXT_BASE: usize = TRAMPOLINE - PAGE_SIZE;
 pub const CLOCK_FREQ: usize = 12500000;
 /// the physical memory end
 pub const MEMORY_END: usize = 0x88000000;
+/// big stride for stride scheduling algorithm
+pub const BIG_STRIDE: isize = 0x3f3f3f3f;
+/// default stride for stride scheduling algorithm
+pub const INIT_STRIDE: isize = 0;
+/// default priority for stride scheduling algorithm
+pub const INIT_PRIORITY: isize = 16;
 /// The base address of control registers in Virtio_Block device
 pub const MMIO: &[(usize, usize)] = &[(0x10001000, 0x1000)];
