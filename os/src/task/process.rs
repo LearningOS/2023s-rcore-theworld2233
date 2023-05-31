@@ -7,7 +7,7 @@ use super::{add_task, SignalFlags};
 use super::{pid_alloc, PidHandle};
 use crate::fs::{File, Stdin, Stdout};
 use crate::mm::{translated_refmut, MemorySet, KERNEL_SPACE};
-use crate::sync::{Condvar, Mutex, Semaphore, UPSafeCell};
+use crate::sync::{Condvar, DeadlockChecker, Mutex, Semaphore, UPSafeCell};
 use crate::trap::{trap_handler, TrapContext};
 use alloc::string::String;
 use alloc::sync::{Arc, Weak};
@@ -49,6 +49,12 @@ pub struct ProcessControlBlockInner {
     pub semaphore_list: Vec<Option<Arc<Semaphore>>>,
     /// condvar list
     pub condvar_list: Vec<Option<Arc<Condvar>>>,
+    /// is deadlock detect enabled
+    pub deadlock_detect_enabled: bool,
+    /// mutex deadlock checker
+    pub mutex_deadlock_checker: DeadlockChecker,
+    /// semaphore deadlock checker
+    pub sem_deadlock_checker: DeadlockChecker,
 }
 
 impl ProcessControlBlockInner {
@@ -81,6 +87,10 @@ impl ProcessControlBlockInner {
     /// get a task with tid in this process
     pub fn get_task(&self, tid: usize) -> Arc<TaskControlBlock> {
         self.tasks[tid].as_ref().unwrap().clone()
+    }
+    /// enable / disable deadlock detection
+    pub fn enable_deadlock_detect(&mut self, enable: bool) {
+        self.deadlock_detect_enabled = enable;
     }
 }
 
@@ -119,6 +129,9 @@ impl ProcessControlBlock {
                     mutex_list: Vec::new(),
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
+                    deadlock_detect_enabled: false,
+                    mutex_deadlock_checker: DeadlockChecker::new(),
+                    sem_deadlock_checker: DeadlockChecker::new(),
                 })
             },
         });
@@ -245,6 +258,9 @@ impl ProcessControlBlock {
                     mutex_list: Vec::new(),
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
+                    deadlock_detect_enabled: false,
+                    mutex_deadlock_checker: DeadlockChecker::new(),
+                    sem_deadlock_checker: DeadlockChecker::new(),
                 })
             },
         });

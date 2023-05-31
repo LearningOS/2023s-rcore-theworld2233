@@ -1,0 +1,9 @@
+/home/oslab/2023s-rcore-theworld2233/os/target/riscv64gc-unknown-none-elf/release/deps/buddy_system_allocator-a0f0c029d1fb1456.rmeta: /home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/lib.rs /home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/frame.rs /home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/linked_list.rs
+
+/home/oslab/2023s-rcore-theworld2233/os/target/riscv64gc-unknown-none-elf/release/deps/libbuddy_system_allocator-a0f0c029d1fb1456.rlib: /home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/lib.rs /home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/frame.rs /home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/linked_list.rs
+
+/home/oslab/2023s-rcore-theworld2233/os/target/riscv64gc-unknown-none-elf/release/deps/buddy_system_allocator-a0f0c029d1fb1456.d: /home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/lib.rs /home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/frame.rs /home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/linked_list.rs
+
+/home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/lib.rs:
+/home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/frame.rs:
+/home/oslab/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-ed15b681fafda09b/buddy_system_allocator-0.6.0/src/linked_list.rs:
